@@ -1,0 +1,105 @@
+import numpy as np
+import random
+
+# ----------------------------
+# Warehouse Environment
+# ----------------------------
+GRID_SIZE = 6
+START = (0, 0)
+GOAL = (5, 5)
+
+# Obstacles (unsafe areas)
+OBSTACLES = [(1, 2), (2, 2), (3, 1), (4, 3)]
+
+ACTIONS = ['UP', 'DOWN', 'LEFT', 'RIGHT']
+NUM_ACTIONS = len(ACTIONS)
+
+# ----------------------------
+# Q-Learning Parameters
+# ----------------------------
+alpha = 0.1        # Learning rate
+gamma = 0.9        # Discount factor
+epsilon = 0.3      # Exploration rate
+episodes = 500
+
+# Q-table
+Q = np.zeros((GRID_SIZE, GRID_SIZE, NUM_ACTIONS))
+
+# ----------------------------
+# Helper Functions
+# ----------------------------
+def is_valid(state):
+    r, c = state
+    return 0 <= r < GRID_SIZE and 0 <= c < GRID_SIZE
+
+def get_next_state(state, action):
+    r, c = state
+
+    if action == 0:     # UP
+        r -= 1
+    elif action == 1:   # DOWN
+        r += 1
+    elif action == 2:   # LEFT
+        c -= 1
+    elif action == 3:   # RIGHT
+        c += 1
+
+    next_state = (r, c)
+
+    if not is_valid(next_state):
+        return state   # stay if invalid move
+    return next_state
+
+def get_reward(state):
+    if state == GOAL:
+        return 100
+    if state in OBSTACLES:
+        return -100
+    return -1
+
+# ----------------------------
+# Training with Q-Learning
+# ----------------------------
+for episode in range(episodes):
+    state = START
+
+    while state != GOAL:
+        r, c = state
+
+        # Epsilon-greedy action selection
+        if random.uniform(0, 1) < epsilon:
+            action = random.randint(0, NUM_ACTIONS - 1)
+        else:
+            action = np.argmax(Q[r, c])
+
+        next_state = get_next_state(state, action)
+        reward = get_reward(next_state)
+
+        nr, nc = next_state
+
+        # Q-learning update
+        Q[r, c, action] = Q[r, c, action] + alpha * (
+            reward + gamma * np.max(Q[nr, nc]) - Q[r, c, action]
+        )
+
+        # Stop if obstacle is hit
+        if next_state in OBSTACLES:
+            break
+
+        state = next_state
+
+# ----------------------------
+# Display Optimal Path
+# ----------------------------
+state = START
+path = [state]
+
+while state != GOAL:
+    r, c = state
+    action = np.argmax(Q[r, c])
+    state = get_next_state(state, action)
+    path.append(state)
+
+print("Optimal Path for Delivery Robot:")
+for p in path:
+    print(p)
